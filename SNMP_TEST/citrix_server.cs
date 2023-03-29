@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Cassia;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -70,6 +71,24 @@ namespace SNMP_TEST
             {
                 sc.Start();
             }
+        }
+
+        public int GetDisconnectedSesssion()
+        {
+            int disconnectedCount = 0;
+            ITerminalServicesManager manager = new TerminalServicesManager();
+            using (ITerminalServer server = manager.GetRemoteServer(citrix_server_name))
+            {
+                server.Open();
+                foreach(ITerminalServicesSession session in server.GetSessions())
+                {
+                    if(session.ConnectionState == ConnectionState.Disconnected)
+                    {
+                        disconnectedCount ++;
+                    }
+                }
+            }
+            return disconnectedCount;
         }
     }
 }

@@ -252,6 +252,7 @@ namespace SNMP_TEST
                         citrix_server ctx_server = new citrix_server();
                         ctx_server.citrix_server_name = server_name;
                         bool isPingable = ctx_server.PingHost();
+                        ctx_server.GetDisconnectedSesssion();
                         PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
                         if (pkt.Pdu.Type == PduType.V2Trap)
                         {

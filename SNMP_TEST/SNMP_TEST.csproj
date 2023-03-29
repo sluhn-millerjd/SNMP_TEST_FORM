@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Cassia.NetStandard" Version="1.0.0" />
     <PackageReference Include="SnmpSharpNet-core" Version="1.0.0" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="7.0.0" />
   </ItemGroup>

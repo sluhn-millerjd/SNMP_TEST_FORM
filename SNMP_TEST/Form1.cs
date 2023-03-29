@@ -8,9 +8,9 @@ namespace SNMP_TEST
 {
     public partial class Form1 : Form
     {
-        protected Socket _socket;
-        protected byte[] _inbuffer;
-        protected IPEndPoint _peerIP;
+        protected Socket? _socket;
+        protected byte[]? _inbuffer;
+        protected IPEndPoint? _peerIP;
         private System.Windows.Forms.ListBox listBox1;
         private System.Windows.Forms.CheckBox startCheckBox;
 
@@ -40,7 +40,7 @@ namespace SNMP_TEST
             this.startCheckBox.Appearance = System.Windows.Forms.Appearance.Button;
             this.startCheckBox.Location = new System.Drawing.Point(347, 12);
             this.startCheckBox.Name = "startCheckBox";
-            this.startCheckBox.Size = new System.Drawing.Size(75, 24);
+            this.startCheckBox.Size = new System.Drawing.Size(75, 35);
             this.startCheckBox.TabIndex = 3;
             this.startCheckBox.Text = "&Start";
             this.startCheckBox.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -109,7 +109,7 @@ namespace SNMP_TEST
                 return false;
             try
             {
-                // prepare to "bindd" the socket to the local port number
+                // prepare to "bind" the socket to the local port number
                 // binding notifies the operating system that application
                 // wishies to receive data sent to the specified port number
                 // prepare EndPoint that will bind the application to all available
@@ -209,6 +209,7 @@ namespace SNMP_TEST
                             String.Format("**** Vb oid: {0} type: {1} value: {2}",
                             vb.Oid.ToString(), SnmpConstants.GetTypeName(vb.Value.Type), vb.Value.ToString()));
                     }
+                    PostAsyncMessage("*****" + pkt.Pdu.VbList[6].ToString());
                     PostAsyncMessage("** End of SNMPv1 TRAP");
                 }
             } else if(packetVersion == (int)SnmpVersion.Ver2)
@@ -237,6 +238,7 @@ namespace SNMP_TEST
                     }
                     if (pkt != null)
                     {
+                        string server_name = pkt.Pdu.VbList[6].Value.ToString();
                         PostAsyncMessage(
                             String.Format("*** commumity {0} sysUpTime: {1} trapObjectID: {2}",
                             pkt.Community, pkt.Pdu.TrapSysUpTime, pkt.Pdu.TrapObjectID.ToString()));
@@ -247,6 +249,10 @@ namespace SNMP_TEST
                                 String.Format("**** Vb oid: {0} type: {1} value: {2}",
                                 vb.Oid.ToString(), SnmpConstants.GetTypeName(vb.Value.Type), vb.Value.ToString()));
                         }
+                        citrix_server ctx_server = new citrix_server();
+                        ctx_server.citrix_server_name = server_name;
+                        bool isPingable = ctx_server.PingHost();
+                        PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
                         if (pkt.Pdu.Type == PduType.V2Trap)
                         {
                             PostAsyncMessage("** End of SNMPv2 TRAP");

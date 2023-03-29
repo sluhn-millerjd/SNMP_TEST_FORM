@@ -1,28 +1,20 @@
 ﻿using Cassia;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.ServiceProcess;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SNMP_TEST
 {
     internal class citrix_server
     {
         //attributes
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public string citrix_server_name { get; set; }
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+        private static string desktopServiceName = "Citrix Desktop Service";
 
-        
         public bool PingHost ()
         {
             bool pingable = false;
-#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             Ping pinger = null;
-#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
             try
             {
@@ -47,7 +39,8 @@ namespace SNMP_TEST
         {
             if (PingHost())
             {
-
+                StopService(desktopServiceName);
+                StartService(desktopServiceName);
             }
             else
             {
@@ -60,7 +53,16 @@ namespace SNMP_TEST
             ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
             if (sc.Status == ServiceControllerStatus.Running)
             {
-                sc.Stop();
+                try { 
+                    sc.Stop(); 
+                } catch (Exception e)
+                {
+                    EventLog eventLog = new EventLog("Application");
+                    eventLog.Source = "Application";
+                    eventLog.WriteEntry(string.Format("Error stopping service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
+                }
+
+
             }
         }
         
@@ -69,7 +71,16 @@ namespace SNMP_TEST
             ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
             if (sc.Status == ServiceControllerStatus.Stopped)
             {
-                sc.Start();
+                try
+                {
+                    sc.Start();
+                }
+                catch (Exception e)
+                {
+                    EventLog eventLog = new EventLog("Application");
+                    eventLog.Source = "Application";
+                    eventLog.WriteEntry(string.Format("Error starting service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
+                }
             }
         }
 

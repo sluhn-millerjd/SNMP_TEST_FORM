@@ -1,8 +1,8 @@
 ﻿using Cassia;
 using System.Diagnostics;
-using System.Net;
 using System.Net.NetworkInformation;
 using System.ServiceProcess;
+using RestSharp;
 
 namespace SNMP_TEST
 {
@@ -127,13 +127,23 @@ namespace SNMP_TEST
             return disconnectedCount;
         }
 
-        public void restartCitrixServer()
+        public void shutdownCitrixServer()
         {
             string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}/{1}", citrix_server_name,"$shutdown");
 
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(URL);
-            request.ContentType = "application/json";
-            request.Method = "POST";
+            var options = new RestClientOptions("")
+            {
+                MaxTimeout = -1,
+            };
+            var client = new RestClient(options);
+            var request = new RestRequest(URL, Method.Post);
+
+            
+
+        }
+
+        private void GetAzureSecrets()
+        {
 
         }
     }

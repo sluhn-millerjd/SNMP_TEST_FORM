@@ -7,8 +7,10 @@ namespace SNMP_TEST
 {
     internal class citrix_server
     {
+
+
         //attributes
-        public string citrix_server_name { get; set; }
+        public string? citrix_server_name { get; set; }
         private static string desktopServiceName = "Citrix Desktop Service";
 
         public bool PingHost ()
@@ -24,7 +26,12 @@ namespace SNMP_TEST
             } catch (PingException)
             {
                 // 
-            } finally
+                EventLog eventLog = new EventLog("Application");
+                eventLog.Source = "Application";
+                eventLog.WriteEntry(string.Format("Unable to Ping {0} make sure the server is onnline.", citrix_server_name));
+
+            }
+            finally
             {
                 if(pinger != null)
                 {
@@ -40,12 +47,29 @@ namespace SNMP_TEST
             if (PingHost())
             {
                 StopService(desktopServiceName);
+                
                 StartService(desktopServiceName);
             }
             else
             {
                 return;
             }
+        }
+
+        public void serviceStatus (string ServiceName, int requestedStatus)
+        {
+
+           
+            ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
+            if (requestedStatus == 1)
+            {
+                sc.WaitForStatus(ServiceControllerStatus.Running);
+            }
+            else
+            {
+                sc.WaitForStatus(ServiceControllerStatus.Stopped);
+            }
+
         }
 
         protected void StopService (string ServiceName)

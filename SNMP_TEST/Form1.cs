@@ -209,7 +209,10 @@ namespace SNMP_TEST
                             String.Format("**** Vb oid: {0} type: {1} value: {2}",
                             vb.Oid.ToString(), SnmpConstants.GetTypeName(vb.Value.Type), vb.Value.ToString()));
                     }
-                    PostAsyncMessage("*****" + pkt.Pdu.VbList[6].ToString());
+                    if(pkt.Pdu.VbCount >= 6)
+                    {
+                        PostAsyncMessage("*****" + pkt.Pdu.VbList[6].ToString());
+                    }
                     PostAsyncMessage("** End of SNMPv1 TRAP");
                 }
             } else if(packetVersion == (int)SnmpVersion.Ver2)
@@ -252,8 +255,12 @@ namespace SNMP_TEST
                         citrix_server ctx_server = new citrix_server();
                         ctx_server.citrix_server_name = server_name;
                         bool isPingable = ctx_server.PingHost();
-                        ctx_server.GetDisconnectedSesssion();
-                        PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
+                        if (isPingable)
+                        {
+                            ctx_server.GetDisconnectedSesssion();
+                            PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
+                            ctx_server.RestartDesktopService();
+                        }
                         if (pkt.Pdu.Type == PduType.V2Trap)
                         {
                             PostAsyncMessage("** End of SNMPv2 TRAP");

@@ -1,5 +1,6 @@
 ﻿using Cassia;
 using System.Diagnostics;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.ServiceProcess;
 
@@ -124,6 +125,16 @@ namespace SNMP_TEST
                 }
             }
             return disconnectedCount;
+        }
+
+        public void restartCitrixServer()
+        {
+            string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}/{1}", citrix_server_name,"$shutdown");
+
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(URL);
+            request.ContentType = "application/json";
+            request.Method = "POST";
+
         }
     }
 }

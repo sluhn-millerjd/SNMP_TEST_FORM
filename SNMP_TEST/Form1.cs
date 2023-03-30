@@ -257,7 +257,7 @@ namespace SNMP_TEST
                         bool isPingable = ctx_server.PingHost();
                         if (isPingable)
                         {
-                            ctx_server.GetDisconnectedSesssion();
+                            //ctx_server.GetDisconnectedSesssion();
                             PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
                             ctx_server.RestartDesktopService();
                         }

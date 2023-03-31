@@ -14,18 +14,18 @@ namespace SNMP_TEST
 
         //attributes
         public string? citrix_server_name { get; set; }
-        private static string desktopServiceName = "Citrix Desktop Service";
+        const string desktopServiceName = "Citrix Desktop Service";
         const string secretName_Citrix_Cloud_API_ID = "Citrix-Cloud-API-ID";
-        const string secretName_Citrix_Cloud_API_Secret = "Citrix_Cloud_API_Secret";
-        const string secretName_Citrix_Cloud_Customer_Id = "Citrix_Cloud_Customer_Id";
-        const string secretName_Citrix_Cloud_Site_ID = "Citrix_Cloud_Site_ID";
+        const string secretName_Citrix_Cloud_API_Secret = "Citrix-Cloud-API-Secret";
+        const string secretName_Citrix_Cloud_Customer_Id = "Citrix-Cloud-Customer-Id";
+        const string secretName_Citrix_Cloud_Site_ID = "Citrix-Cloud-Site-ID";
         private string Citrix_Cloud_API_Id_Value { get; set; }
         private string Citrix_Cloud_API_Secret_Value { get; set; }
         private string Citrix_Cloud_Customer_Id_Value { get; set; }
         private string Citrix_Cloud_Site_ID_Value { get; set; }
 
         const string keyVaultName = "KV-SLUHNPROD-Automation";
-        private string kvUri = $"https://{keyVaultName}.vault.azure.net";
+        private string kvUri = "https://" + keyVaultName + ".vault.azure.net";
 
         public bool PingHost ()
         {
@@ -168,19 +168,19 @@ namespace SNMP_TEST
 
             if (secretCloudAPIID != null)
             {
-                Citrix_Cloud_API_Id_Value = secretCloudAPIID.Value.ToString(); 
+                Citrix_Cloud_API_Id_Value = secretCloudAPIID.Value.Value.ToString(); 
             }
             if (secretCloudAPISecret != null)
             {
-                Citrix_Cloud_API_Secret_Value = secretCloudAPISecret.Value.ToString(); 
+                Citrix_Cloud_API_Secret_Value = secretCloudAPISecret.Value.Value.ToString(); 
             }
             if (secretCloudCustomerID != null)
             {
-                Citrix_Cloud_Customer_Id_Value = secretCloudCustomerID.Value.ToString(); 
+                Citrix_Cloud_Customer_Id_Value = secretCloudCustomerID.Value.Value.ToString(); 
             }
             if (secretCloudSiteID != null)
             {
-                Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.ToString(); 
+                Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.Value.ToString(); 
             }
 
 

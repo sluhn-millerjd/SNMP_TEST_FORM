@@ -11,21 +11,19 @@ namespace SNMP_TEST
     internal class citrix_server
     {
 
+        public citrix_server()
+        {
+            GetAzureSecrets();
+        }
+
 
         //attributes
         public string? citrix_server_name { get; set; }
         const string desktopServiceName = "Citrix Desktop Service";
-        const string secretName_Citrix_Cloud_API_ID = "Citrix-Cloud-API-ID";
-        const string secretName_Citrix_Cloud_API_Secret = "Citrix-Cloud-API-Secret";
-        const string secretName_Citrix_Cloud_Customer_Id = "Citrix-Cloud-Customer-Id";
-        const string secretName_Citrix_Cloud_Site_ID = "Citrix-Cloud-Site-ID";
-        private string Citrix_Cloud_API_Id_Value { get; set; }
-        private string Citrix_Cloud_API_Secret_Value { get; set; }
-        private string Citrix_Cloud_Customer_Id_Value { get; set; }
-        private string Citrix_Cloud_Site_ID_Value { get; set; }
-
-        const string keyVaultName = "KV-SLUHNPROD-Automation";
-        private string kvUri = "https://" + keyVaultName + ".vault.azure.net";
+        private static string? Citrix_Cloud_API_Id_Value { get; set; }
+        private static string? Citrix_Cloud_API_Secret_Value { get; set; }
+        private static string? Citrix_Cloud_Customer_Id_Value { get; set; }
+        private static string? Citrix_Cloud_Site_ID_Value { get; set; }
 
         public bool PingHost ()
         {
@@ -156,8 +154,14 @@ namespace SNMP_TEST
 
         }
 
-        public async void GetAzureSecrets()
+        private static async void GetAzureSecrets()
         {
+            const string secretName_Citrix_Cloud_API_ID = "Citrix-Cloud-API-ID";
+            const string secretName_Citrix_Cloud_API_Secret = "Citrix-Cloud-API-Secret";
+            const string secretName_Citrix_Cloud_Customer_Id = "Citrix-Cloud-Customer-Id";
+            const string secretName_Citrix_Cloud_Site_ID = "Citrix-Cloud-Site-ID";
+            const string keyVaultName = "KV-SLUHNPROD-Automation";
+            string kvUri = "https://" + keyVaultName + ".vault.azure.net";
             // Get the secret info to receive the bearer token
             // Generate the connection to the secret vault
             var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
@@ -182,8 +186,6 @@ namespace SNMP_TEST
             {
                 Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.Value.ToString(); 
             }
-
-
         }
     }
 }

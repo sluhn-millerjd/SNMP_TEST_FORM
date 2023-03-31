@@ -258,7 +258,6 @@ namespace SNMP_TEST
                         if (isPingable)
                         {
                             //ctx_server.GetDisconnectedSesssion();
-                            ctx_server.GetAzureSecrets();
                             PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
                             //ctx_server.RestartDesktopService();
                         }

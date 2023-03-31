@@ -142,7 +142,8 @@ namespace SNMP_TEST
 
         public void shutdownCitrixServer()
         {
-            string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}/{1}", citrix_server_name,"$shutdown");
+
+            string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name,"$shutdown");
 
             var options = new RestClientOptions("")
             {
@@ -155,7 +156,7 @@ namespace SNMP_TEST
 
         }
 
-        private async void GetAzureSecrets()
+        public async void GetAzureSecrets()
         {
             // Get the secret info to receive the bearer token
             // Generate the connection to the secret vault
@@ -181,6 +182,8 @@ namespace SNMP_TEST
             {
                 Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.ToString(); 
             }
+
+
         }
     }
 }

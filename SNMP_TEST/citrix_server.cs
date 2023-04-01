@@ -5,11 +5,19 @@ using System.ServiceProcess;
 using RestSharp;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Newtonsoft.Json;
 
 namespace SNMP_TEST
 {
     internal class citrix_server
     {
+        // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
+        public class TokenRoot
+        {
+            public string token_type { get; set; }
+            public string access_token { get; set; }
+            public string expires_in { get; set; }
+        }
 
         public citrix_server()
         {
@@ -20,10 +28,36 @@ namespace SNMP_TEST
         //attributes
         public string? citrix_server_name { get; set; }
         const string desktopServiceName = "Citrix Desktop Service";
-        private static string? Citrix_Cloud_API_Id_Value { get; set; }
-        private static string? Citrix_Cloud_API_Secret_Value { get; set; }
-        private static string? Citrix_Cloud_Customer_Id_Value { get; set; }
-        private static string? Citrix_Cloud_Site_ID_Value { get; set; }
+        private static string? Citrix_Cloud_API_Id_Value;
+        private static string? Citrix_Cloud_API_Secret_Value;
+        private static string? Citrix_Cloud_Customer_Id_Value;
+        private static string? Citrix_Cloud_Site_ID_Value;
+        private static string? Citrix_Cloud_Bearer_Token;
+
+        protected static void SetCloudAPIIDValue(string value)
+        {
+            Citrix_Cloud_API_Id_Value = value;
+        }
+
+        protected static void SetCloudAPISecretValue(string value)
+        {
+            Citrix_Cloud_API_Secret_Value = value;
+        }
+
+        protected static void SetCloudCustomerIdValue(string value)
+        {
+            Citrix_Cloud_Customer_Id_Value= value;
+        }
+
+        protected static void SetCloudSiteIdValue (string value)
+        {
+            Citrix_Cloud_Site_ID_Value = value;
+        }
+
+        protected static void SetCloudBearerToken (string value)
+        {
+            Citrix_Cloud_Bearer_Token = value;
+        }
 
         public bool PingHost ()
         {
@@ -141,7 +175,7 @@ namespace SNMP_TEST
         public void shutdownCitrixServer()
         {
 
-            string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name,"$shutdown");
+            string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name, "$shutdown");
 
             var options = new RestClientOptions("")
             {
@@ -149,9 +183,39 @@ namespace SNMP_TEST
             };
             var client = new RestClient(options);
             var request = new RestRequest(URL, Method.Post);
+            request.AddHeader("Citrix-CustomerId",Citrix_Cloud_Customer_Id_Value);
+            request.AddHeader("Citrix-InstanceId",Citrix_Cloud_Site_ID_Value);
+            request.AddHeader("Authorization", string.Format("CwsAuth Bearer={0}", Citrix_Cloud_Bearer_Token));
+            RestResponse response = client.Post(request);
+            Console.Write(response.Content);
 
             
 
+        }
+
+        private static async void GetDaaSBearerToken()
+        {
+            //var options = new RestClientOptions("")
+            //{
+            //    MaxTimeout = -1,
+            //};
+            var client = new RestClient();
+            var request = new RestRequest("https://api-us.cloud.com/cctrustoauth2/root/tokens/clients", Method.Post);
+            request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
+            request.AddParameter("grant_type", "client_credentials");
+            request.AddParameter("client_id", Citrix_Cloud_API_Id_Value);
+            request.AddParameter("client_secret", Citrix_Cloud_API_Secret_Value);
+            RestResponse response = await client.ExecuteAsync(request);
+
+            TokenRoot? bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
+            if (bearerToken != null)
+            {
+                SetCloudBearerToken(bearerToken.access_token);
+            } else
+            {
+                return;
+            }
+            //Console.WriteLine(response.Content);
         }
 
         private static async void GetAzureSecrets()
@@ -162,6 +226,7 @@ namespace SNMP_TEST
             const string secretName_Citrix_Cloud_Site_ID = "Citrix-Cloud-Site-ID";
             const string keyVaultName = "KV-SLUHNPROD-Automation";
             string kvUri = "https://" + keyVaultName + ".vault.azure.net";
+
             // Get the secret info to receive the bearer token
             // Generate the connection to the secret vault
             var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
@@ -172,20 +237,25 @@ namespace SNMP_TEST
 
             if (secretCloudAPIID != null)
             {
-                Citrix_Cloud_API_Id_Value = secretCloudAPIID.Value.Value.ToString(); 
+                SetCloudAPIIDValue(secretCloudAPIID.Value.Value.ToString());
             }
             if (secretCloudAPISecret != null)
             {
-                Citrix_Cloud_API_Secret_Value = secretCloudAPISecret.Value.Value.ToString(); 
+                SetCloudAPISecretValue(secretCloudAPISecret.Value.Value.ToString());
+                //Citrix_Cloud_API_Secret_Value = secretCloudAPISecret.Value.Value.ToString(); 
             }
             if (secretCloudCustomerID != null)
             {
-                Citrix_Cloud_Customer_Id_Value = secretCloudCustomerID.Value.Value.ToString(); 
+                SetCloudCustomerIdValue(secretCloudCustomerID.Value.Value.ToString());
+                //Citrix_Cloud_Customer_Id_Value = secretCloudCustomerID.Value.Value.ToString(); 
             }
             if (secretCloudSiteID != null)
             {
-                Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.Value.ToString(); 
+                SetCloudSiteIdValue(secretCloudSiteID.Value.Value.ToString());
+                //Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.Value.ToString(); 
             }
+
+            GetDaaSBearerToken();
         }
     }
 }

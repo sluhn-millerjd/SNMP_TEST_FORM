@@ -239,9 +239,36 @@ namespace SNMP_TEST
                         PostAsyncMessage(string.Format("Invalid SNMPv2 packet from {0}", _peerIP.ToString()));
                         pkt = null;
                     }
+
+                    // THis is the start of the v2 Trap the Epic traffic will come into here.
+                    // Here we need to determine what goes where.
                     if (pkt != null)
                     {
-                        string server_name = pkt.Pdu.VbList[6].Value.ToString();
+                        if(pkt.Community.ToString() == "epic")
+                        {
+                            // do epic work here
+                            
+                            if (pkt.Pdu.VbCount > 0)
+                            {
+                                string server_name = pkt.Pdu.VbList[6].Value.ToString();
+                                citrix_server ctx_server = new citrix_server();
+                                ctx_server.citrix_server_name = server_name;
+                                bool isPingable = ctx_server.PingHost();
+                                if (isPingable)
+                                {
+                                    //ctx_server.GetDisconnectedSesssion();
+                                    PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
+                                    //ctx_server.RestartDesktopService();
+                                }
+                                if ((pkt.Pdu.VbList[2].Value
+                                           .ToString()).ToLower()
+                                            == "red")
+                                {
+                                    ctx_server.shutdownCitrixServer();
+                                }
+                            }
+                        }
+                        
                         PostAsyncMessage(
                             String.Format("*** commumity {0} sysUpTime: {1} trapObjectID: {2}",
                             pkt.Community, pkt.Pdu.TrapSysUpTime, pkt.Pdu.TrapObjectID.ToString()));
@@ -252,15 +279,7 @@ namespace SNMP_TEST
                                 String.Format("**** Vb oid: {0} type: {1} value: {2}",
                                 vb.Oid.ToString(), SnmpConstants.GetTypeName(vb.Value.Type), vb.Value.ToString()));
                         }
-                        citrix_server ctx_server = new citrix_server();
-                        ctx_server.citrix_server_name = server_name;
-                        bool isPingable = ctx_server.PingHost();
-                        if (isPingable)
-                        {
-                            //ctx_server.GetDisconnectedSesssion();
-                            PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
-                            //ctx_server.RestartDesktopService();
-                        }
+                        
                         if (pkt.Pdu.Type == PduType.V2Trap)
                         {
                             PostAsyncMessage("** End of SNMPv2 TRAP");

@@ -252,6 +252,7 @@ namespace SNMP_TEST
                             {
                                 string server_name = pkt.Pdu.VbList[6].Value.ToString();
                                 citrix_server ctx_server = new citrix_server();
+                                citrix_server.GetAzureSecrets();
                                 ctx_server.citrix_server_name = server_name;
                                 bool isPingable = ctx_server.PingHost();
                                 if (isPingable)
@@ -260,7 +261,7 @@ namespace SNMP_TEST
                                     PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
                                     //ctx_server.RestartDesktopService();
                                 }
-                                if ((pkt.Pdu.VbList[2].Value
+                                if ((pkt.Pdu.VbList[1].Value
                                            .ToString()).ToLower()
                                             == "red")
                                 {
@@ -306,6 +307,8 @@ namespace SNMP_TEST
             else
             {
                 listBox1.Items.Add(msg);
+                listBox1.SetSelected(listBox1.Items.Count - 1, true);
+                listBox1.SetSelected(listBox1.Items.Count - 1, false);
             }
         }
     }

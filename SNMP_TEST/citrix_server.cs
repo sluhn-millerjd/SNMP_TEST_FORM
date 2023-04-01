@@ -11,6 +11,25 @@ namespace SNMP_TEST
 {
     internal class citrix_server
     {
+        //attributes
+        public string? citrix_server_name { get; set; }
+        const string desktopServiceName = "Citrix Desktop Service";
+        public static string? Citrix_Cloud_API_Id_Value;
+        public static string? Citrix_Cloud_API_Secret_Value;
+        public static string? Citrix_Cloud_Customer_Id_Value;
+        public static string? Citrix_Cloud_Site_ID_Value;
+        public static string? Citrix_Cloud_Bearer_Token;
+
+        protected static void SetCloudAPIIDValue(string value) => Citrix_Cloud_API_Id_Value = value;
+
+        protected static void SetCloudAPISecretValue(string value) => Citrix_Cloud_API_Secret_Value = value;
+
+        protected static void SetCloudCustomerIdValue(string value) => Citrix_Cloud_Customer_Id_Value = value;
+
+        protected static void SetCloudSiteIdValue(string value) => Citrix_Cloud_Site_ID_Value = value;
+
+        protected static void SetCloudBearerToken(string value) => Citrix_Cloud_Bearer_Token = value;
+
         // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
         public class TokenRoot
         {
@@ -21,43 +40,20 @@ namespace SNMP_TEST
 
         public citrix_server()
         {
-            GetAzureSecrets();
+            CloudAPIData cad = new CloudAPIData();
         }
 
-
-        //attributes
-        public string? citrix_server_name { get; set; }
-        const string desktopServiceName = "Citrix Desktop Service";
-        private static string? Citrix_Cloud_API_Id_Value;
-        private static string? Citrix_Cloud_API_Secret_Value;
-        private static string? Citrix_Cloud_Customer_Id_Value;
-        private static string? Citrix_Cloud_Site_ID_Value;
-        private static string? Citrix_Cloud_Bearer_Token;
-
-        protected static void SetCloudAPIIDValue(string value)
+        public class CloudAPIData
         {
-            Citrix_Cloud_API_Id_Value = value;
+            public string Citrix_Cloud_API_Id_Value { get; set; }
+            public string Citrix_Cloud_API_Secret_Value { get; set; }
+            public string Citrix_Cloud_Customer_Id_Value { get; set; }
+            public string Citrix_Cloud_Site_ID_Value { get; set; }
+            public string Citrix_Cloud_Bearer_Token { get; set; }
+
         }
 
-        protected static void SetCloudAPISecretValue(string value)
-        {
-            Citrix_Cloud_API_Secret_Value = value;
-        }
 
-        protected static void SetCloudCustomerIdValue(string value)
-        {
-            Citrix_Cloud_Customer_Id_Value= value;
-        }
-
-        protected static void SetCloudSiteIdValue (string value)
-        {
-            Citrix_Cloud_Site_ID_Value = value;
-        }
-
-        protected static void SetCloudBearerToken (string value)
-        {
-            Citrix_Cloud_Bearer_Token = value;
-        }
 
         public bool PingHost ()
         {
@@ -172,28 +168,27 @@ namespace SNMP_TEST
             return disconnectedCount;
         }
 
-        public void shutdownCitrixServer()
+        public async void shutdownCitrixServer()
         {
 
+            if(citrix_server.Citrix_Cloud_Customer_Id_Value == null || citrix_server.Citrix_Cloud_Site_ID_Value == null || citrix_server.Citrix_Cloud_Bearer_Token == null)
+            {
+                GetAzureSecrets();
+                GetDaaSBearerToken();
+            }
             string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name, "$shutdown");
 
-            var options = new RestClientOptions("")
-            {
-                MaxTimeout = -1,
-            };
-            var client = new RestClient(options);
+            var client = new RestClient();
             var request = new RestRequest(URL, Method.Post);
-            request.AddHeader("Citrix-CustomerId",Citrix_Cloud_Customer_Id_Value);
-            request.AddHeader("Citrix-InstanceId",Citrix_Cloud_Site_ID_Value);
+            request.AddHeader("Citrix-CustomerId", Citrix_Cloud_Customer_Id_Value);
+            request.AddHeader("Citrix-InstanceId", Citrix_Cloud_Site_ID_Value);
             request.AddHeader("Authorization", string.Format("CwsAuth Bearer={0}", Citrix_Cloud_Bearer_Token));
-            RestResponse response = client.Post(request);
-            Console.Write(response.Content);
-
-            
+            RestResponse response = await client.ExecuteAsync(request);
+            Console.Write(response.Content);            
 
         }
 
-        private static async void GetDaaSBearerToken()
+        private static void GetDaaSBearerToken()
         {
             //var options = new RestClientOptions("")
             //{
@@ -205,7 +200,7 @@ namespace SNMP_TEST
             request.AddParameter("grant_type", "client_credentials");
             request.AddParameter("client_id", Citrix_Cloud_API_Id_Value);
             request.AddParameter("client_secret", Citrix_Cloud_API_Secret_Value);
-            RestResponse response = await client.ExecuteAsync(request);
+            RestResponse response = client.Execute(request);
 
             TokenRoot? bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
             if (bearerToken != null)
@@ -218,7 +213,7 @@ namespace SNMP_TEST
             //Console.WriteLine(response.Content);
         }
 
-        private static async void GetAzureSecrets()
+        public static void GetAzureSecrets()
         {
             const string secretName_Citrix_Cloud_API_ID = "Citrix-Cloud-API-ID";
             const string secretName_Citrix_Cloud_API_Secret = "Citrix-Cloud-API-Secret";
@@ -230,10 +225,10 @@ namespace SNMP_TEST
             // Get the secret info to receive the bearer token
             // Generate the connection to the secret vault
             var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
-            var secretCloudAPIID = await client.GetSecretAsync(secretName_Citrix_Cloud_API_ID);
-            var secretCloudAPISecret = await client.GetSecretAsync(secretName_Citrix_Cloud_API_Secret);
-            var secretCloudCustomerID = await client.GetSecretAsync(secretName_Citrix_Cloud_Customer_Id);
-            var secretCloudSiteID = await client.GetSecretAsync(secretName_Citrix_Cloud_Site_ID);
+            var secretCloudAPIID = client.GetSecret(secretName_Citrix_Cloud_API_ID);
+            var secretCloudAPISecret = client.GetSecret(secretName_Citrix_Cloud_API_Secret);
+            var secretCloudCustomerID = client.GetSecret(secretName_Citrix_Cloud_Customer_Id);
+            var secretCloudSiteID = client.GetSecret(secretName_Citrix_Cloud_Site_ID);
 
             if (secretCloudAPIID != null)
             {

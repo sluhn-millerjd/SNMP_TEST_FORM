@@ -188,33 +188,33 @@ namespace SNMP_TEST
             int packetVersion = SnmpPacket.GetProtocolVersion(_inbuffer, inlen);
             if (packetVersion == (int)SnmpVersion.Ver1)
             {
-                SnmpV1TrapPacket pkt = new SnmpV1TrapPacket();
-                try
-                {
-                    pkt.decode(_inbuffer, inlen);
-                } catch (Exception ex)
-                {
-                    PostAsyncMessage("Error parsing SNMPv1 Trap: " + ex.Message);
-                    pkt = null;
-                }
-                if(pkt != null)
-                {
-                    PostAsyncMessage(String.Format("*** SNMPv1 TRAP from {0}",_peerIP.ToString()));
-                    PostAsyncMessage(String.Format("*** community {0} generic id: {1} specific id: {2}",
-                        pkt.Community, pkt.Pdu.Generic, pkt.Pdu.Specific));
-                    PostAsyncMessage(string.Format("*** PDU count: {0}", pkt.Pdu.VbCount));
-                    foreach (Vb vb in pkt.Pdu.VbList)
-                    {
-                        PostAsyncMessage(
-                            String.Format("**** Vb oid: {0} type: {1} value: {2}",
-                            vb.Oid.ToString(), SnmpConstants.GetTypeName(vb.Value.Type), vb.Value.ToString()));
-                    }
-                    if(pkt.Pdu.VbCount >= 6)
-                    {
-                        PostAsyncMessage("*****" + pkt.Pdu.VbList[6].ToString());
-                    }
-                    PostAsyncMessage("** End of SNMPv1 TRAP");
-                }
+                //SnmpV1TrapPacket pkt = new SnmpV1TrapPacket();
+                //try
+                //{
+                //    pkt.decode(_inbuffer, inlen);
+                //} catch (Exception ex)
+                //{
+                //    PostAsyncMessage("Error parsing SNMPv1 Trap: " + ex.Message);
+                //    pkt = null;
+                //}
+                //if(pkt != null)
+                //{
+                //    PostAsyncMessage(String.Format("*** SNMPv1 TRAP from {0}",_peerIP.ToString()));
+                //    PostAsyncMessage(String.Format("*** community {0} generic id: {1} specific id: {2}",
+                //        pkt.Community, pkt.Pdu.Generic, pkt.Pdu.Specific));
+                //    PostAsyncMessage(string.Format("*** PDU count: {0}", pkt.Pdu.VbCount));
+                //    foreach (Vb vb in pkt.Pdu.VbList)
+                //    {
+                //        PostAsyncMessage(
+                //            String.Format("**** Vb oid: {0} type: {1} value: {2}",
+                //            vb.Oid.ToString(), SnmpConstants.GetTypeName(vb.Value.Type), vb.Value.ToString()));
+                //    }
+                //    if(pkt.Pdu.VbCount >= 6)
+                //    {
+                //        PostAsyncMessage("*****" + pkt.Pdu.VbList[6].ToString());
+                //    }
+                //    PostAsyncMessage("** End of SNMPv1 TRAP");
+                //}
             } else if(packetVersion == (int)SnmpVersion.Ver2)
             {
                 SnmpV2Packet pkt = new SnmpV2Packet();

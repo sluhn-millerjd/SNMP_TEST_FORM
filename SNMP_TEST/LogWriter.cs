@@ -22,6 +22,7 @@ namespace SNMP_TEST
             public string ServerName { get; set; }
             public string DateTime { get; set; }
             public string Action { get; set; }
+            public string ServerType { get; set; }
         }
 
         public LogWriter() {
@@ -30,14 +31,15 @@ namespace SNMP_TEST
 
         public LogWriter(string name) { }
 
-        public static void WriteLog(string serverName, string dateTime, string action)
+        public async void WriteLog(string serverName, string action, string serverType)
         {
             List<data> _data = new List<data>();
             _data.Add(new data()
             {
                 ServerName = serverName,
-                DateTime = dateTime, 
-                Action = action
+                DateTime = DateTime.Now.ToString(), 
+                Action = action,
+                ServerType = serverType
             });
 
             string json = JsonSerializer.Serialize(_data, 
@@ -56,7 +58,7 @@ namespace SNMP_TEST
             {
                 File.Create(logFilePath).Close();
             }
-            _ = File.AppendAllTextAsync(logFilePath, json);
+            await File.AppendAllTextAsync(logFilePath, json);
             
         }
     }

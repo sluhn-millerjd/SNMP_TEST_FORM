@@ -14,11 +14,10 @@ namespace SNMP_TEST
         private System.Windows.Forms.ListBox listBox1;
         private System.Windows.Forms.CheckBox startCheckBox;
 
+        const string Epic_Windows_Infrastructure = "Epic Windows Infrastructure";
+
         public Form1()
-        {
-            // Check if the regKey is present
-            LogWriter logWriter = new LogWriter();
-            LogWriter.WriteLog("AZ1-EP-A001", DateTime.Now.ToString(), "Shutdown");
+        {            
 
             // it is not neccesary to initialize variables to null, but better safe then sorry
             _socket = null;
@@ -248,7 +247,9 @@ namespace SNMP_TEST
                     // Here we need to determine what goes where.
                     if (pkt != null)
                     {
-                        if(pkt.Community.ToString() == "epic")
+                        LogWriter logWriter = new LogWriter();
+                        
+                        if (pkt.Community.ToString() == "epic")
                         {
                             // do epic work here
                             
@@ -269,6 +270,7 @@ namespace SNMP_TEST
                                     }
                                     citrix_server.GetAzureSecrets();
                                     ctx_server.shutdownCitrixServer();
+
                                 } else if ((pkt.Pdu.VbList[1].Value
                                            .ToString()).ToLower()
                                             == "yellow")

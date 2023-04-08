@@ -13,6 +13,8 @@ namespace SNMP_TEST
     internal class citrix_server
     {
         //attributes
+        const string Epic_Citrix_HyperSpace_Server = "Epic Citrix Hyperspace Server";
+        const string Epic_Citrix_WebEAD_Server = "Epic Citrix WebEAD Server";
         public string citrix_server_name { get; set; }
         const string desktopServiceName = "Citrix Desktop Service";
         public static string Citrix_Cloud_API_Id_Value;
@@ -185,8 +187,9 @@ namespace SNMP_TEST
             request.AddHeader("Citrix-InstanceId", Citrix_Cloud_Site_ID_Value);
             request.AddHeader("Authorization", string.Format("CwsAuth Bearer={0}", Citrix_Cloud_Bearer_Token));
             RestResponse response = await client.ExecuteAsync(request);
-            Console.Write(response.Content);            
-
+            //Console.Write(response.Content);
+            LogWriter logWriter = new LogWriter();
+            logWriter.WriteLog(citrix_server_name, "Shutdown", Epic_Citrix_HyperSpace_Server);
         }
 
         private static void GetDaaSBearerToken()

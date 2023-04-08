@@ -6,19 +6,20 @@ using RestSharp;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Newtonsoft.Json;
+using Microsoft.Azure.KeyVault;
 
 namespace SNMP_TEST
 {
     internal class citrix_server
     {
         //attributes
-        public string? citrix_server_name { get; set; }
+        public string citrix_server_name { get; set; }
         const string desktopServiceName = "Citrix Desktop Service";
-        public static string? Citrix_Cloud_API_Id_Value;
-        public static string? Citrix_Cloud_API_Secret_Value;
-        public static string? Citrix_Cloud_Customer_Id_Value;
-        public static string? Citrix_Cloud_Site_ID_Value;
-        public static string? Citrix_Cloud_Bearer_Token;
+        public static string Citrix_Cloud_API_Id_Value;
+        public static string Citrix_Cloud_API_Secret_Value;
+        public static string Citrix_Cloud_Customer_Id_Value;
+        public static string Citrix_Cloud_Site_ID_Value;
+        public static string Citrix_Cloud_Bearer_Token;
 
         protected static void SetCloudAPIIDValue(string value) => Citrix_Cloud_API_Id_Value = value;
 
@@ -202,7 +203,7 @@ namespace SNMP_TEST
             request.AddParameter("client_secret", Citrix_Cloud_API_Secret_Value);
             RestResponse response = client.Execute(request);
 
-            TokenRoot? bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
+            TokenRoot bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
             if (bearerToken != null)
             {
                 SetCloudBearerToken(bearerToken.access_token);
@@ -224,7 +225,13 @@ namespace SNMP_TEST
 
             // Get the secret info to receive the bearer token
             // Generate the connection to the secret vault
-            var client = new SecretClient(new Uri(kvUri), new DefaultAzureCredential());
+            var creds = new DefaultAzureCredential();
+            var token = creds.GetToken(
+                new Azure.Core.TokenRequestContext(
+                    new[] { "https://vault.azure.net/.default" }));
+            var client = new SecretClient(new Uri(kvUri), creds);
+            
+            
             var secretCloudAPIID = client.GetSecret(secretName_Citrix_Cloud_API_ID);
             var secretCloudAPISecret = client.GetSecret(secretName_Citrix_Cloud_API_Secret);
             var secretCloudCustomerID = client.GetSecret(secretName_Citrix_Cloud_Customer_Id);

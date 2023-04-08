@@ -8,14 +8,18 @@ namespace SNMP_TEST
 {
     public partial class Form1 : Form
     {
-        protected Socket? _socket;
-        protected byte[]? _inbuffer;
-        protected IPEndPoint? _peerIP;
+        protected Socket _socket;
+        protected byte[] _inbuffer;
+        protected IPEndPoint _peerIP;
         private System.Windows.Forms.ListBox listBox1;
         private System.Windows.Forms.CheckBox startCheckBox;
 
         public Form1()
         {
+            // Check if the regKey is present
+            LogWriter logWriter = new LogWriter();
+            LogWriter.WriteLog("AZ1-EP-A001", DateTime.Now.ToString(), "Shutdown");
+
             // it is not neccesary to initialize variables to null, but better safe then sorry
             _socket = null;
             this.listBox1 = new System.Windows.Forms.ListBox();
@@ -60,7 +64,7 @@ namespace SNMP_TEST
             InitializeComponent();
         }
 
-        private void onStartChanged(object? sender, EventArgs e)
+        private void onStartChanged(object sender, EventArgs e)
         {
             if (startCheckBox.Checked)
             {

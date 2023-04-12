@@ -60,6 +60,8 @@ namespace SNMP_TEST
             this.Controls.Add(this.startCheckBox);
             this.Name = "Form1";
             this.Text = "Form1";
+
+            citrix_server.GetAzureSecrets();
             InitializeComponent();
         }
 

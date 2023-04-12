@@ -228,10 +228,11 @@ namespace SNMP_TEST
 
             // Get the secret info to receive the bearer token
             // Generate the connection to the secret vault
-            var creds = new DefaultAzureCredential();
-            var token = creds.GetToken(
-                new Azure.Core.TokenRequestContext(
-                    new[] { "https://vault.azure.net/.default" }));
+            //var creds = new ManagedIdentityCredential("51f45e34-c525-4099-b325-49f711f6c5e9");
+            var creds = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = "51f45e34 - c525 - 4099 - b325 - 49f711f6c5e9" });
+            //var token = creds.GetToken(
+            //    new Azure.Core.TokenRequestContext(
+            //        new[] { "https://vault.azure.net/.default" }));
             var client = new SecretClient(new Uri(kvUri), creds);
             
             

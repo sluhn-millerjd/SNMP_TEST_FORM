@@ -270,7 +270,7 @@ namespace SNMP_TEST
                                         //ctx_server.GetDisconnectedSesssion();
                                         PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
                                     }
-                                    citrix_server.GetAzureSecrets();
+                                    //citrix_server.();
                                     ctx_server.shutdownCitrixServer();
 
                                 } else if ((pkt.Pdu.VbList[1].Value
@@ -279,7 +279,7 @@ namespace SNMP_TEST
                                 {
                                     if (isPingable)
                                     {
-                                        //ctx_server.RestartDesktopService();
+                                        ctx_server.RestartDesktopService();
                                     }
                                 }
                             }

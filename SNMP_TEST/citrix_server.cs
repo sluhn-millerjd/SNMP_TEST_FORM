@@ -7,6 +7,8 @@ using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Newtonsoft.Json;
 using Microsoft.Azure.KeyVault;
+using System.Configuration;
+using System.Reflection.Metadata;
 
 namespace SNMP_TEST
 {
@@ -72,13 +74,13 @@ namespace SNMP_TEST
             {
                 // 
                 EventLog eventLog = new EventLog("Application");
-                eventLog.Source = "Application";
+                eventLog.Source = "SLUHNTrapperKeeper";
                 eventLog.WriteEntry(string.Format("Unable to Ping {0} make sure the server is onnline.", citrix_server_name));
 
             }
             finally
             {
-                if(pinger != null)
+                if (pinger != null)
                 {
                     pinger.Dispose();
                 }
@@ -92,29 +94,51 @@ namespace SNMP_TEST
             if (PingHost())
             {
                 StopService(desktopServiceName);
-                
+                // Wait for Service to stop
+
+                do
+                {
+                    // Just sit here and wait till the service is stopped.
+                } while (serviceStatus(desktopServiceName, 0));
+
                 StartService(desktopServiceName);
+                LogWriter log = new LogWriter();
+                log.WriteLog(citrix_server_name, "Restarted Desktop Service", Epic_Citrix_HyperSpace_Server);
             }
             else
             {
+
+                EventLog eventLog = new EventLog("Application");
+                eventLog.Source = "SLUHNTrapperKeeper";
+                eventLog.WriteEntry(string.Format("{0} is not respinding to ping.", citrix_server_name));
+
                 return;
             }
         }
 
-        public void serviceStatus (string ServiceName, int requestedStatus)
+        public bool serviceStatus (string ServiceName, int requestedStatus)
         {
 
-           
-            ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
-            if (requestedStatus == 1)
+            try
             {
-                sc.WaitForStatus(ServiceControllerStatus.Running);
-            }
-            else
-            {
-                sc.WaitForStatus(ServiceControllerStatus.Stopped);
-            }
 
+                ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
+                if (requestedStatus == 1)
+                {
+                    sc.WaitForStatus(ServiceControllerStatus.Running);
+                }
+                else
+                {
+                    sc.WaitForStatus(ServiceControllerStatus.Stopped);
+                }
+            }
+            catch (Exception e)
+            {
+                EventLog eventLog = new EventLog("Application");
+                eventLog.Source = "SLUHNTrapperKeeper";
+                eventLog.WriteEntry(string.Format("Error getting the status of the {0}\n Error message {1}", ServiceName, e.Message));
+            }
+            return false;
         }
 
         protected void StopService (string ServiceName)
@@ -127,7 +151,7 @@ namespace SNMP_TEST
                 } catch (Exception e)
                 {
                     EventLog eventLog = new EventLog("Application");
-                    eventLog.Source = "Application";
+                    eventLog.Source = "SLUHNTrapperKeeper";
                     eventLog.WriteEntry(string.Format("Error stopping service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
                 }
 
@@ -147,12 +171,14 @@ namespace SNMP_TEST
                 catch (Exception e)
                 {
                     EventLog eventLog = new EventLog("Application");
-                    eventLog.Source = "Application";
+                    eventLog.Source = "SLUHNTrapperKeeper";
                     eventLog.WriteEntry(string.Format("Error starting service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
                 }
             }
         }
 
+        // This seemed to either fail or take forever to get a response.  
+        // Not even shure this is necessary.
         public int GetDisconnectedSesssion()
         {
             int disconnectedCount = 0;
@@ -176,7 +202,7 @@ namespace SNMP_TEST
 
             if(citrix_server.Citrix_Cloud_Customer_Id_Value == null || citrix_server.Citrix_Cloud_Site_ID_Value == null || citrix_server.Citrix_Cloud_Bearer_Token == null)
             {
-                GetAzureSecrets();
+                //GetAzureSecrets();
                 GetDaaSBearerToken();
             }
             string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name, "$shutdown");
@@ -209,9 +235,14 @@ namespace SNMP_TEST
             TokenRoot bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
             if (bearerToken != null)
             {
-                SetCloudBearerToken(bearerToken.access_token);
+                SetCloudBearerToken(bearerToken.access_token);                
             } else
             {
+                EventLog eventLog = new EventLog("Application");
+                eventLog.Source = "SLUHNTrapperKeeper";
+                eventLog.WriteEntry(string.Format("Error getting the Bearer Token with {0}\n{1}\n{2}", 
+                    Citrix_Cloud_API_Id_Value, 
+                    Citrix_Cloud_API_Secret_Value));
                 return;
             }
             //Console.WriteLine(response.Content);
@@ -223,45 +254,63 @@ namespace SNMP_TEST
             const string secretName_Citrix_Cloud_API_Secret = "Citrix-Cloud-API-Secret";
             const string secretName_Citrix_Cloud_Customer_Id = "Citrix-Cloud-Customer-Id";
             const string secretName_Citrix_Cloud_Site_ID = "Citrix-Cloud-Site-ID";
-            const string keyVaultName = "KV-SLUHNPROD-Automation";
-            string kvUri = "https://" + keyVaultName + ".vault.azure.net";
+
+            SetCloudAPIIDValue(ConfigurationManager.AppSettings[secretName_Citrix_Cloud_API_ID]);
+            SetCloudAPISecretValue(ConfigurationManager.AppSettings[secretName_Citrix_Cloud_API_Secret]);
+            SetCloudCustomerIdValue(ConfigurationManager.AppSettings[secretName_Citrix_Cloud_Customer_Id]);
+            SetCloudSiteIdValue(ConfigurationManager.AppSettings[secretName_Citrix_Cloud_Site_ID]);
+
+            // This is not working at the moment, leaving this for now until i can figure out how to get it working properly.  
+            //const string keyVaultName = "KV-SLUHNPROD-Automation";
+            //string kvUri = "https://" + keyVaultName + ".vault.azure.net";
 
             // Get the secret info to receive the bearer token
             // Generate the connection to the secret vault
             //var creds = new ManagedIdentityCredential("51f45e34-c525-4099-b325-49f711f6c5e9");
-            var creds = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = "51f45e34 - c525 - 4099 - b325 - 49f711f6c5e9" });
+            //var creds = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = "51f45e34-c525-4099-b325-49f711f6c5e9" });
             //var token = creds.GetToken(
             //    new Azure.Core.TokenRequestContext(
             //        new[] { "https://vault.azure.net/.default" }));
-            var client = new SecretClient(new Uri(kvUri), creds);
-            
-            
-            var secretCloudAPIID = client.GetSecret(secretName_Citrix_Cloud_API_ID);
-            var secretCloudAPISecret = client.GetSecret(secretName_Citrix_Cloud_API_Secret);
-            var secretCloudCustomerID = client.GetSecret(secretName_Citrix_Cloud_Customer_Id);
-            var secretCloudSiteID = client.GetSecret(secretName_Citrix_Cloud_Site_ID);
+            //try
+            //{
 
-            if (secretCloudAPIID != null)
-            {
-                SetCloudAPIIDValue(secretCloudAPIID.Value.Value.ToString());
-            }
-            if (secretCloudAPISecret != null)
-            {
-                SetCloudAPISecretValue(secretCloudAPISecret.Value.Value.ToString());
-                //Citrix_Cloud_API_Secret_Value = secretCloudAPISecret.Value.Value.ToString(); 
-            }
-            if (secretCloudCustomerID != null)
-            {
-                SetCloudCustomerIdValue(secretCloudCustomerID.Value.Value.ToString());
-                //Citrix_Cloud_Customer_Id_Value = secretCloudCustomerID.Value.Value.ToString(); 
-            }
-            if (secretCloudSiteID != null)
-            {
-                SetCloudSiteIdValue(secretCloudSiteID.Value.Value.ToString());
-                //Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.Value.ToString(); 
-            }
+            //    //var client = new SecretClient(new Uri(kvUri), creds);
 
-            GetDaaSBearerToken();
+
+            //    var secretCloudAPIID = client.GetSecret(secretName_Citrix_Cloud_API_ID);
+            //    var secretCloudAPISecret = client.GetSecret(secretName_Citrix_Cloud_API_Secret);
+            //    var secretCloudCustomerID = client.GetSecret(secretName_Citrix_Cloud_Customer_Id);
+            //    var secretCloudSiteID = client.GetSecret(secretName_Citrix_Cloud_Site_ID);
+            //    if (secretCloudAPIID != null)
+            //    {
+            //        SetCloudAPIIDValue(secretCloudAPIID.Value.Value.ToString());
+            //    }
+            //    if (secretCloudAPISecret != null)
+            //    {
+            //        SetCloudAPISecretValue(secretCloudAPISecret.Value.Value.ToString());
+            //        //Citrix_Cloud_API_Secret_Value = secretCloudAPISecret.Value.Value.ToString(); 
+            //    }
+            //    if (secretCloudCustomerID != null)
+            //    {
+            //        SetCloudCustomerIdValue(secretCloudCustomerID.Value.Value.ToString());
+            //        //Citrix_Cloud_Customer_Id_Value = secretCloudCustomerID.Value.Value.ToString(); 
+            //    }
+            //    if (secretCloudSiteID != null)
+            //    {
+            //        SetCloudSiteIdValue(secretCloudSiteID.Value.Value.ToString());
+            //        //Citrix_Cloud_Site_ID_Value = secretCloudSiteID.Value.Value.ToString(); 
+            //    }
+
+            //    //GetDaaSBearerToken();
+            //}
+            //catch (Exception e)
+            //{
+            //    EventLog eventLog = new EventLog("Application");
+            //    eventLog.Source = "SLUHNTrapperKeeper";
+            //    eventLog.WriteEntry(string.Format("Error getting Secrets from the KeyVault with message {0}", e.Message, creds.ToString()));
+            //}
+
+
         }
     }
 }

@@ -2,9 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Reflection.Metadata;
+using System.ServiceProcess;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -58,8 +60,17 @@ namespace SNMP_TEST
             {
                 File.Create(logFilePath).Close();
             }
-            await File.AppendAllTextAsync(logFilePath, json);
-            
+            try
+            {
+                await File.AppendAllTextAsync(logFilePath, json);
+            }catch (Exception ex)
+            {
+                EventLog eventLog = new EventLog("Application");
+                eventLog.Source = "SLUHNTrapperKeeper";
+                eventLog.WriteEntry(string.Format("Unable to write to the current log file {0}, with error message {1}", logFilePath, ex.Message));
+
+            }
+
         }
     }
 }

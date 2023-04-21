@@ -17,8 +17,11 @@ namespace SNMP_TEST
         //attributes
         const string Epic_Citrix_HyperSpace_Server = "Epic Citrix Hyperspace Server";
         const string Epic_Citrix_WebEAD_Server = "Epic Citrix WebEAD Server";
-        public string citrix_server_name { get; set; }
         const string desktopServiceName = "Citrix Desktop Service";
+        const string EventLogSource = "SLUHNTrapperKeeper";
+        const string EventLogName = "Application";
+
+        public string citrix_server_name { get; set; }
         public static string Citrix_Cloud_API_Id_Value;
         public static string Citrix_Cloud_API_Secret_Value;
         public static string Citrix_Cloud_Customer_Id_Value;
@@ -73,9 +76,10 @@ namespace SNMP_TEST
             } catch (PingException)
             {
                 // 
-                EventLog eventLog = new EventLog("Application");
-                eventLog.Source = "SLUHNTrapperKeeper";
-                eventLog.WriteEntry(string.Format("Unable to Ping {0} make sure the server is onnline.", citrix_server_name));
+                WriteToEventLog(EventLogSource, string.Format("Unable to Ping make sure the server is online.", citrix_server_name),"Ping Failed");
+                //EventLog eventLog = new EventLog("Application");
+                //eventLog.Source = "SLUHNTrapperKeeper";
+                //eventLog.WriteEntry(string.Format("Unable to Ping {0} make sure the server is onnline.", citrix_server_name));
 
             }
             finally
@@ -108,7 +112,7 @@ namespace SNMP_TEST
             else
             {
 
-                EventLog eventLog = new EventLog("Application");
+                EventLog eventLog = new EventLog(EventLogName);
                 eventLog.Source = "SLUHNTrapperKeeper";
                 eventLog.WriteEntry(string.Format("{0} is not respinding to ping.", citrix_server_name));
 
@@ -143,19 +147,29 @@ namespace SNMP_TEST
 
         protected void StopService (string ServiceName)
         {
-            ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
-            if (sc.Status == ServiceControllerStatus.Running)
+            try
             {
-                try { 
-                    sc.Stop(); 
-                } catch (Exception e)
+
+                ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
+                if (sc.Status == ServiceControllerStatus.Running)
                 {
-                    EventLog eventLog = new EventLog("Application");
-                    eventLog.Source = "SLUHNTrapperKeeper";
-                    eventLog.WriteEntry(string.Format("Error stopping service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
+                    try
+                    {
+                        sc.Stop();
+                    }
+                    catch (Exception e)
+                    {
+                        EventLog eventLog = new EventLog("Application");
+                        eventLog.Source = "SLUHNTrapperKeeper";
+                        eventLog.WriteEntry(string.Format("Error stopping service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
+                    }
+
+
                 }
-
-
+            }
+            catch (Exception e)
+            {
+                WriteToEventLog(EventLogSource, "Error connecting to machine.", e.Message);               
             }
         }
         
@@ -310,6 +324,14 @@ namespace SNMP_TEST
             //    eventLog.WriteEntry(string.Format("Error getting Secrets from the KeyVault with message {0}", e.Message, creds.ToString()));
             //}
 
+
+        }
+
+        private void WriteToEventLog(string Source, string Message, string ExceptionMessage)
+        {
+            EventLog eventLog = new EventLog(EventLogName);
+            eventLog.Source = Source;
+            eventLog.WriteEntry(string.Format("{0} with exception {1}", Message, ExceptionMessage));
 
         }
     }

@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Microsoft.Azure.KeyVault;
 using System.Configuration;
 using System.Reflection.Metadata;
+using System.Net;
 
 namespace SNMP_TEST
 {
@@ -18,7 +19,7 @@ namespace SNMP_TEST
         const string Epic_Citrix_HyperSpace_Server = "Epic Citrix Hyperspace Server";
         const string Epic_Citrix_WebEAD_Server = "Epic Citrix WebEAD Server";
         const string desktopServiceName = "Citrix Desktop Service";
-        const string EventLogSource = "SLUHNTrapperKeeper";
+        const string EventLogSource = "Application";
         const string EventLogName = "Application";
 
         public string citrix_server_name { get; set; }
@@ -138,8 +139,8 @@ namespace SNMP_TEST
             }
             catch (Exception e)
             {
-                EventLog eventLog = new EventLog("Application");
-                eventLog.Source = "SLUHNTrapperKeeper";
+                EventLog eventLog = new EventLog(EventLogName);
+                eventLog.Source = EventLogSource;
                 eventLog.WriteEntry(string.Format("Error getting the status of the {0}\n Error message {1}", ServiceName, e.Message));
             }
             return false;
@@ -159,8 +160,8 @@ namespace SNMP_TEST
                     }
                     catch (Exception e)
                     {
-                        EventLog eventLog = new EventLog("Application");
-                        eventLog.Source = "SLUHNTrapperKeeper";
+                        EventLog eventLog = new EventLog(EventLogName);
+                        eventLog.Source = EventLogSource;
                         eventLog.WriteEntry(string.Format("Error stopping service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
                     }
 
@@ -175,19 +176,26 @@ namespace SNMP_TEST
         
         protected void StartService (string ServiceName)
         {
-            ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
-            if (sc.Status == ServiceControllerStatus.Stopped)
+            try
             {
-                try
+                ServiceController sc = new ServiceController(ServiceName, citrix_server_name);
+                if (sc.Status == ServiceControllerStatus.Stopped)
                 {
-                    sc.Start();
+                    try
+                    {
+                        sc.Start();
+                    }
+                    catch (Exception e)
+                    {
+                        EventLog eventLog = new EventLog("Application");
+                        eventLog.Source = "SLUHNTrapperKeeper";
+                        eventLog.WriteEntry(string.Format("Error starting service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
+                    }
                 }
-                catch (Exception e)
-                {
-                    EventLog eventLog = new EventLog("Application");
-                    eventLog.Source = "SLUHNTrapperKeeper";
-                    eventLog.WriteEntry(string.Format("Error starting service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
-                }
+            }
+            catch (Exception e)
+            {
+                WriteToEventLog(EventLogSource, "Error connecting to machine.", e.Message);
             }
         }
 
@@ -217,7 +225,10 @@ namespace SNMP_TEST
             if(citrix_server.Citrix_Cloud_Customer_Id_Value == null || citrix_server.Citrix_Cloud_Site_ID_Value == null || citrix_server.Citrix_Cloud_Bearer_Token == null)
             {
                 //GetAzureSecrets();
-                GetDaaSBearerToken();
+                if (!TestBearerToken())
+                {
+                    GetDaaSBearerToken();
+                }
             }
             string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name, "$shutdown");
 
@@ -234,10 +245,7 @@ namespace SNMP_TEST
 
         private static void GetDaaSBearerToken()
         {
-            //var options = new RestClientOptions("")
-            //{
-            //    MaxTimeout = -1,
-            //};
+
             var client = new RestClient();
             var request = new RestRequest("https://api-us.cloud.com/cctrustoauth2/root/tokens/clients", Method.Post);
             request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -260,6 +268,29 @@ namespace SNMP_TEST
                 return;
             }
             //Console.WriteLine(response.Content);
+        }
+
+        private bool TestBearerToken()
+        {
+            string URL = "https://api-us.cloud.com/cvad/manage/DeliveryGroups/PRD_AZ1_Epic_Hyperspace_Prod/Applications";
+            var client = new RestClient();
+            var request = new RestRequest(URL, Method.Post);
+            request.AddHeader("Citrix-CustomerId", Citrix_Cloud_Customer_Id_Value);
+            request.AddHeader("Citrix-InstanceId", Citrix_Cloud_Site_ID_Value);
+            request.AddHeader("Authorization", string.Format("CwsAuth Bearer={0}", Citrix_Cloud_Bearer_Token));
+            RestResponse response = client.Execute(request);
+            if (response != null)
+            {
+                if(response.StatusCode != HttpStatusCode.OK)
+                {
+                    return false;
+                } else { 
+                    return true;
+                }
+            } else
+            {
+                return false;
+            }
         }
 
         public static void GetAzureSecrets()

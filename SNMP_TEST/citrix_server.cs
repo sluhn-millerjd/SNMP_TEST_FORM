@@ -272,7 +272,7 @@ namespace SNMP_TEST
 
         private bool TestBearerToken()
         {
-            string URL = "https://api-us.cloud.com/cvad/manage/DeliveryGroups/PRD_AZ1_Epic_Hyperspace_Prod/Applications";
+            string URL = "https://api-us.cloud.com/cvad/manage/About";
             var client = new RestClient();
             var request = new RestRequest(URL, Method.Post);
             request.AddHeader("Citrix-CustomerId", Citrix_Cloud_Customer_Id_Value);

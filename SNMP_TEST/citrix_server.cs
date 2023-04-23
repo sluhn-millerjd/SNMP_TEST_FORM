@@ -78,9 +78,6 @@ namespace SNMP_TEST
             {
                 // 
                 WriteToEventLog(EventLogSource, string.Format("Unable to Ping make sure the server is online.", citrix_server_name),"Ping Failed");
-                //EventLog eventLog = new EventLog("Application");
-                //eventLog.Source = "SLUHNTrapperKeeper";
-                //eventLog.WriteEntry(string.Format("Unable to Ping {0} make sure the server is onnline.", citrix_server_name));
 
             }
             finally
@@ -114,7 +111,7 @@ namespace SNMP_TEST
             {
 
                 EventLog eventLog = new EventLog(EventLogName);
-                eventLog.Source = "SLUHNTrapperKeeper";
+                eventLog.Source = EventLogSource;
                 eventLog.WriteEntry(string.Format("{0} is not respinding to ping.", citrix_server_name));
 
                 return;
@@ -188,7 +185,7 @@ namespace SNMP_TEST
                     catch (Exception e)
                     {
                         EventLog eventLog = new EventLog("Application");
-                        eventLog.Source = "SLUHNTrapperKeeper";
+                        eventLog.Source = EventLogSource;
                         eventLog.WriteEntry(string.Format("Error starting service {0} on server {1}.\n {2}", ServiceName, citrix_server_name, e.Message));
                     }
                 }
@@ -253,15 +250,25 @@ namespace SNMP_TEST
             request.AddParameter("client_id", Citrix_Cloud_API_Id_Value);
             request.AddParameter("client_secret", Citrix_Cloud_API_Secret_Value);
             RestResponse response = client.Execute(request);
-
-            TokenRoot bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
-            if (bearerToken != null)
+            TokenRoot bearerToken = null;
+            try
+            {
+                bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
+            }
+            catch (Exception ex)
+            {
+                citrix_server writeevent = new citrix_server();
+                writeevent.WriteToEventLog(EventLogSource, string.Format("Unable to convert the response to Json object\n{0}",response.Content), ex.Message);
+                
+            }
+            
+            if (bearerToken != null && response.StatusCode == HttpStatusCode.OK)
             {
                 SetCloudBearerToken(bearerToken.access_token);                
             } else
             {
                 EventLog eventLog = new EventLog("Application");
-                eventLog.Source = "SLUHNTrapperKeeper";
+                eventLog.Source = EventLogSource;
                 eventLog.WriteEntry(string.Format("Error getting the Bearer Token with {0}\n{1}\n{2}", 
                     Citrix_Cloud_API_Id_Value, 
                     Citrix_Cloud_API_Secret_Value));

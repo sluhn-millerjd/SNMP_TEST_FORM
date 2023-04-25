@@ -132,6 +132,9 @@ namespace SNMP_TEST
                 return false;
             if(!RegisterReceiverOperation())
                 return false;
+            
+            LogWriter logWriter = new LogWriter();
+            logWriter.ReadJsonLog();
             return true;
         }
 
@@ -249,8 +252,7 @@ namespace SNMP_TEST
                     // Here we need to determine what goes where.
                     if (pkt != null)
                     {
-                        LogWriter logWriter = new LogWriter();
-                        
+                                               
                         if (pkt.Community.ToString() == "epic")
                         {
                             // do epic work here
@@ -269,8 +271,7 @@ namespace SNMP_TEST
                                     {
                                         //ctx_server.GetDisconnectedSesssion();
                                         PostAsyncMessage(string.Format("***** {0}: Response to ping {1} ", server_name, isPingable.ToString()));
-                                    }
-                                    //citrix_server.();
+                                    }                                    
                                     ctx_server.shutdownCitrixServer();
 
                                 } else if ((pkt.Pdu.VbList[1].Value

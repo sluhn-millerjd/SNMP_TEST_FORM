@@ -229,15 +229,29 @@ namespace SNMP_TEST
             }
             string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name, "$shutdown");
 
-            var client = new RestClient();
-            var request = new RestRequest(URL, Method.Post);
-            request.AddHeader("Citrix-CustomerId", Citrix_Cloud_Customer_Id_Value);
-            request.AddHeader("Citrix-InstanceId", Citrix_Cloud_Site_ID_Value);
-            request.AddHeader("Authorization", string.Format("CwsAuth Bearer={0}", Citrix_Cloud_Bearer_Token));
-            RestResponse response = await client.ExecuteAsync(request);
-            //Console.Write(response.Content);
-            LogWriter logWriter = new LogWriter();
-            logWriter.WriteLog(citrix_server_name, "Shutdown", Epic_Citrix_HyperSpace_Server);
+            try
+            {
+                var client = new RestClient();
+                var request = new RestRequest(URL, Method.Post);
+                request.AddHeader("Citrix-CustomerId", Citrix_Cloud_Customer_Id_Value);
+                request.AddHeader("Citrix-InstanceId", Citrix_Cloud_Site_ID_Value);
+                request.AddHeader("Authorization", string.Format("CwsAuth Bearer={0}", Citrix_Cloud_Bearer_Token));
+                RestResponse response = await client.ExecuteAsync(request);
+
+                LogWriter logWriter = new LogWriter();
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    logWriter.WriteLog(citrix_server_name, "Shutdown", Epic_Citrix_HyperSpace_Server);
+                } else
+                {
+                    logWriter.WriteLog(citrix_server_name, "Unable to Shutdown Citrix Server. Status Code " + response.StatusCode.ToString(), Epic_Citrix_HyperSpace_Server);
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteToEventLog(EventLogSource, "Unable to Shutdown citrix server via Cloud API", ex.Message);
+                
+            }
         }
 
         private static void GetDaaSBearerToken()
@@ -251,27 +265,37 @@ namespace SNMP_TEST
             request.AddParameter("client_secret", Citrix_Cloud_API_Secret_Value);
             RestResponse response = client.Execute(request);
             TokenRoot bearerToken = null;
-            try
+            if (response.StatusCode == HttpStatusCode.OK)
             {
-                bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
-            }
-            catch (Exception ex)
-            {
-                citrix_server writeevent = new citrix_server();
-                writeevent.WriteToEventLog(EventLogSource, string.Format("Unable to convert the response to Json object\n{0}",response.Content), ex.Message);
-                
-            }
-            
-            if (bearerToken != null && response.StatusCode == HttpStatusCode.OK)
-            {
-                SetCloudBearerToken(bearerToken.access_token);                
+                try
+                {
+                    bearerToken = JsonConvert.DeserializeObject<TokenRoot>(response.Content);
+                }
+                catch (Exception ex)
+                {
+                    citrix_server writeevent = new citrix_server();
+                    writeevent.WriteToEventLog(EventLogSource, string.Format("Unable to convert the response to Json object\n{0}", response.Content), ex.Message);
+
+                }
+
+                if (bearerToken != null && response.StatusCode == HttpStatusCode.OK)
+                {
+                    SetCloudBearerToken(bearerToken.access_token);
+                }
+                else
+                {
+                    EventLog eventLog = new EventLog("Application");
+                    eventLog.Source = EventLogSource;
+                    eventLog.WriteEntry(string.Format("Error getting the Bearer Token with {0}\n{1}\n{2}",
+                        Citrix_Cloud_API_Id_Value,
+                        Citrix_Cloud_API_Secret_Value));
+                    return;
+                } 
             } else
             {
-                EventLog eventLog = new EventLog("Application");
+                EventLog eventLog = new EventLog(EventLogName);
                 eventLog.Source = EventLogSource;
-                eventLog.WriteEntry(string.Format("Error getting the Bearer Token with {0}\n{1}\n{2}", 
-                    Citrix_Cloud_API_Id_Value, 
-                    Citrix_Cloud_API_Secret_Value));
+                eventLog.WriteEntry(string.Format("Unable to get Bearer Token with Status code: {0}", response.StatusCode.ToString()));
                 return;
             }
             //Console.WriteLine(response.Content);

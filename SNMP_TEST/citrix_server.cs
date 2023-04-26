@@ -219,14 +219,21 @@ namespace SNMP_TEST
         public async void shutdownCitrixServer()
         {
 
-            if(citrix_server.Citrix_Cloud_Customer_Id_Value == null || citrix_server.Citrix_Cloud_Site_ID_Value == null || citrix_server.Citrix_Cloud_Bearer_Token == null)
+            if(citrix_server.Citrix_Cloud_Customer_Id_Value == null || citrix_server.Citrix_Cloud_Site_ID_Value == null)
             {
-                //GetAzureSecrets();
-                if (!TestBearerToken())
-                {
-                    GetDaaSBearerToken();
-                }
+                WriteToEventLog(EventLogSource, string.Format("Did not have needed Citrix Cloud Info.\nCustomer ID {0}\nCloud Site ID {1}",
+                    citrix_server.Citrix_Cloud_Customer_Id_Value,
+                    citrix_server.Citrix_Cloud_Site_ID_Value),
+                    "Going to get the needed info.");
+                GetAzureSecrets();
             }
+
+            if (!TestBearerToken())
+            {
+                WriteToEventLog(EventLogSource, "New to get a new Bearer Token from Citrix.", string.Format("The old token was {0}",citrix_server.Citrix_Cloud_Bearer_Token));
+                GetDaaSBearerToken();
+            }
+
             string URL = String.Format("https://api-us.cloud.com/cvad/manage/Machines/{0}.slhn.org/{1}", citrix_server_name, "$shutdown");
 
             try
@@ -305,7 +312,7 @@ namespace SNMP_TEST
         {
             string URL = "https://api-us.cloud.com/cvad/manage/About";
             var client = new RestClient();
-            var request = new RestRequest(URL, Method.Post);
+            var request = new RestRequest(URL, Method.Get);
             request.AddHeader("Citrix-CustomerId", Citrix_Cloud_Customer_Id_Value);
             request.AddHeader("Citrix-InstanceId", Citrix_Cloud_Site_ID_Value);
             request.AddHeader("Authorization", string.Format("CwsAuth Bearer={0}", Citrix_Cloud_Bearer_Token));

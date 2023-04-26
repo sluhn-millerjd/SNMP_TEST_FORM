@@ -41,6 +41,8 @@ namespace SNMP_TEST
             if (!File.Exists(logFilePath))
             {
                 File.Create(logFilePath).Close();
+                CurrentJsonFile = null;
+                CurrentJsonFile = new List<data>();
             }
         }
 
